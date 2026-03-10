@@ -1,0 +1,2 @@
+Lines to delete: 1960-2759
+This removes the orphaned renderAvailableJobCard function that was never properly implemented and is not used anywhere in the code.
