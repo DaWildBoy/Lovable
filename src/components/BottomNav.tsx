@@ -187,9 +187,9 @@ export function BottomNav({ currentPath, onNavigate }: BottomNavProps) {
                 key={tab.id}
                 data-tour={`nav-${tab.id}`}
                 onClick={() => onNavigate(tab.path)}
-                className="flex items-center justify-center flex-1 h-full relative"
+                className="flex flex-col items-center justify-center flex-1 h-full relative"
               >
-                <div className="w-13 h-13 -mt-6 rounded-full bg-moveme-blue-600 flex items-center justify-center shadow-lg shadow-moveme-blue-600/30 active:scale-95 transition-transform duration-150 ring-4 ring-white">
+                <div className="w-11 h-11 rounded-full bg-moveme-blue-600 flex items-center justify-center shadow-md shadow-moveme-blue-600/25 active:scale-95 transition-transform duration-150">
                   <Plus className="w-6 h-6 text-white stroke-[2.5]" />
                 </div>
               </button>
