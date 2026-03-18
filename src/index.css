@@ -114,6 +114,24 @@
   }
 }
 
+@media (max-width: 768px) {
+  *,
+  *::before,
+  *::after {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+  }
+
+  html, body {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+}
+
 .pac-container-force-hide {
   display: none !important;
 }
