@@ -1,4 +1,4 @@
-import { Home, MessageSquare, Briefcase, User, Package, Bell } from 'lucide-react';
+import { Home, MessageSquare, Briefcase, User, Package, Bell, Plus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
@@ -8,6 +8,7 @@ interface NavTab {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   path: string;
+  isCreateButton?: boolean;
 }
 
 interface BottomNavProps {
@@ -129,8 +130,8 @@ export function BottomNav({ currentPath, onNavigate }: BottomNavProps) {
       case 'customer':
         return [
           { id: 'home', label: 'Home', icon: Home, path: '/customer' },
-          { id: 'notifications', label: 'Alerts', icon: Bell, path: '/customer/notifications' },
           { id: 'jobs', label: 'Jobs', icon: Briefcase, path: '/customer/jobs' },
+          { id: 'create', label: '', icon: Plus, path: '/create-job', isCreateButton: true },
           { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/customer/messages' },
           { id: 'profile', label: 'Profile', icon: User, path: '/customer/profile' },
         ];
@@ -155,9 +156,9 @@ export function BottomNav({ currentPath, onNavigate }: BottomNavProps) {
           ];
         } else {
           return [
-            { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/business' },
-            { id: 'notifications', label: 'Alerts', icon: Bell, path: '/business/notifications' },
+            { id: 'dashboard', label: 'Home', icon: Home, path: '/business' },
             { id: 'jobs', label: 'Jobs', icon: Briefcase, path: '/business/jobs' },
+            { id: 'create', label: '', icon: Plus, path: '/create-job', isCreateButton: true },
             { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/business/messages' },
             { id: 'profile', label: 'Profile', icon: User, path: '/business/profile' },
           ];
@@ -179,6 +180,21 @@ export function BottomNav({ currentPath, onNavigate }: BottomNavProps) {
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = currentPath === tab.path;
+
+          if (tab.isCreateButton) {
+            return (
+              <button
+                key={tab.id}
+                data-tour={`nav-${tab.id}`}
+                onClick={() => onNavigate(tab.path)}
+                className="flex items-center justify-center flex-1 h-full relative"
+              >
+                <div className="w-13 h-13 -mt-6 rounded-full bg-moveme-blue-600 flex items-center justify-center shadow-lg shadow-moveme-blue-600/30 active:scale-95 transition-transform duration-150 ring-4 ring-white">
+                  <Plus className="w-6 h-6 text-white stroke-[2.5]" />
+                </div>
+              </button>
+            );
+          }
 
           return (
             <button

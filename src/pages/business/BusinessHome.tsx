@@ -34,6 +34,7 @@ import { RetailQuickTemplates } from '../../components/retail/RetailQuickTemplat
 import { RetailQuickCouriers } from '../../components/retail/RetailQuickCouriers';
 import { RetailProfileCard } from '../../components/retail/RetailProfileCard';
 import { GuidedTour } from '../../components/GuidedTour';
+import { HeaderNotificationBell } from '../../components/HeaderNotificationBell';
 import { retailTourSteps, haulageTourSteps } from '../../lib/tourSteps';
 
 type Job = Database['public']['Tables']['jobs']['Row'];
@@ -451,8 +452,15 @@ export function BusinessHome({ onNavigate }: BusinessHomeProps) {
     <div className="min-h-screen bg-gray-50 pb-20 md:pb-8">
       <div className="gradient-header px-4 pt-8 pb-12">
         <div className="max-w-4xl mx-auto">
-          <p className="text-white/60 text-sm font-medium mb-1">Good to see you</p>
-          <h1 className="text-2xl font-bold tracking-tight">{profile?.company_name || profile?.first_name || 'Business'}</h1>
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-white/60 text-sm font-medium mb-1">Good to see you</p>
+              <h1 className="text-2xl font-bold tracking-tight">{profile?.company_name || profile?.first_name || 'Business'}</h1>
+            </div>
+            <div className="md:hidden">
+              <HeaderNotificationBell onNavigate={onNavigate} notificationsPath="/business/notifications" />
+            </div>
+          </div>
         </div>
       </div>
 
