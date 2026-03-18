@@ -89,39 +89,22 @@ export function RateDeliveryCard({
 
     setSubmitting(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
-        throw new Error('Not authenticated');
-      }
-
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-rating`;
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({
+      const { data, error: fnError } = await supabase.functions.invoke('submit-rating', {
+        body: {
           job_id: jobId,
           rater_account_type: raterAccountType,
           stars,
           comment: comment.trim() || null,
           tags: selectedTags.length > 0 ? selectedTags : null
-        })
+        }
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Server error: ${response.status}`);
+      if (fnError) {
+        throw new Error(fnError.message || `Server error`);
       }
 
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to submit rating');
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to submit rating');
       }
 
       onNotification?.('Thanks for your feedback!', 'success');
