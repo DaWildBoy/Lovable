@@ -16,7 +16,7 @@ import { CourierCargoSelector, CourierCargoSize } from '../components/courier/Co
 import { CourierHandoverForm } from '../components/courier/CourierHandoverForm';
 import { CourierSafetyCheckbox } from '../components/courier/CourierSafetyCheckbox';
 import { AuctionInfoPopup } from '../components/AuctionInfoPopup';
-import { Loader2, ArrowLeft, Package, Truck, Sofa, Laptop, Car, Wrench, Box, Layers, FileQuestion, Upload, X, Zap, Calendar, DollarSign, Gavel, CreditCard, Receipt, AlertTriangle, Shield, Dumbbell, Lock, Settings, ChevronDown, ChevronUp, Plus, Trash2, MapPin, Camera, FileCheck, BookmarkPlus, Save, Banknote, Gem, ShieldCheck, ShoppingBag, ShoppingCart, Link, ListChecks, Phone, Eye, Image, ClipboardList, UserCircle, Users } from 'lucide-react';
+import { Loader2, ArrowLeft, Package, Truck, Sofa, Laptop, Car, Wrench, Box, Layers, FileQuestion, Upload, X, Zap, Calendar, DollarSign, Gavel, CreditCard, Receipt, AlertTriangle, Shield, Dumbbell, Lock, Settings, ChevronDown, ChevronUp, Plus, Trash2, MapPin, Camera, FileCheck, BookmarkPlus, Save, Banknote, Gem, ShieldCheck, ShoppingBag, ShoppingCart, Link, ListChecks, Phone, Eye, Image, ClipboardList, CircleUser as UserCircle, Users } from 'lucide-react';
 
 interface LocationData {
   text: string;
@@ -4545,6 +4545,13 @@ export function CreateJobPage({ onBack, onJobCreated, editJobId }: { onBack: () 
                 <p className="text-sm text-red-600 whitespace-pre-line">{error}</p>
               </div>
             )}
+
+            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+              <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <p className="text-xs leading-relaxed text-slate-600">
+                <span className="font-semibold text-slate-700">Delivery & Return Policy:</span> To protect our drivers' time, a strict 25-minute waiting grace period applies at drop-off. If the receiver is unavailable or the cargo is rejected upon arrival, you will be charged a 50% Return Fee to cover the driver's reverse trip. By posting this job, you agree to these terms.
+              </p>
+            </div>
 
             <div className="flex gap-4">
               <button
