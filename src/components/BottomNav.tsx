@@ -9,6 +9,7 @@ interface NavTab {
   icon: React.ComponentType<{ className?: string }>;
   path: string;
   isCreateButton?: boolean;
+  highlight?: boolean;
 }
 
 interface BottomNavProps {
@@ -140,7 +141,7 @@ export function BottomNav({ currentPath, onNavigate }: BottomNavProps) {
         return [
           { id: 'home', label: 'Home', icon: Home, path: '/courier' },
           { id: 'notifications', label: 'Alerts', icon: Bell, path: '/courier/notifications' },
-          { id: 'jobs', label: isCD ? 'Assign' : 'Jobs', icon: Package, path: '/courier/jobs' },
+          { id: 'jobs', label: isCD ? 'Assign' : 'Jobs', icon: Package, path: '/courier/jobs', highlight: true },
           { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/courier/messages' },
           { id: 'profile', label: 'Profile', icon: User, path: '/courier/profile' },
         ];
@@ -196,6 +197,8 @@ export function BottomNav({ currentPath, onNavigate }: BottomNavProps) {
             );
           }
 
+          const isHighlighted = tab.highlight && !isActive;
+
           return (
             <button
               key={tab.id}
@@ -204,16 +207,24 @@ export function BottomNav({ currentPath, onNavigate }: BottomNavProps) {
               className={`flex flex-col items-center justify-center flex-1 h-full transition-all duration-200 relative group ${
                 isActive
                   ? 'text-moveme-blue-600'
-                  : 'text-gray-400 active:text-gray-600'
+                  : isHighlighted
+                    ? 'text-emerald-600 active:text-emerald-700'
+                    : 'text-gray-400 active:text-gray-600'
               }`}
             >
               <div className="relative">
                 {isActive && (
                   <div className="absolute -inset-2.5 bg-moveme-blue-50 rounded-xl -z-10 animate-scale-in" />
                 )}
+                {isHighlighted && (
+                  <div className="absolute -inset-2.5 bg-emerald-50 rounded-xl -z-10" />
+                )}
                 <Icon className={`w-5.5 h-5.5 mb-0.5 transition-all duration-200 ${
-                  isActive ? 'stroke-[2.5]' : 'stroke-[1.75]'
+                  isActive ? 'stroke-[2.5]' : isHighlighted ? 'stroke-[2]' : 'stroke-[1.75]'
                 }`} />
+                {isHighlighted && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full ring-2 ring-white" />
+                )}
                 {tab.id === 'notifications' && unreadCount > 0 && (
                   <span className="absolute -top-1.5 -right-1.5 bg-error-500 text-white text-[9px] font-bold min-w-[16px] h-4 rounded-full flex items-center justify-center px-1 ring-2 ring-white">
                     {unreadCount > 9 ? '9+' : unreadCount}
@@ -226,7 +237,7 @@ export function BottomNav({ currentPath, onNavigate }: BottomNavProps) {
                 )}
               </div>
               <span className={`text-[10px] leading-tight transition-all duration-200 ${
-                isActive ? 'font-bold' : 'font-medium'
+                isActive ? 'font-bold' : isHighlighted ? 'font-semibold' : 'font-medium'
               }`}>
                 {tab.label}
               </span>
