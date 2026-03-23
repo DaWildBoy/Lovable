@@ -12,6 +12,11 @@ import { HaulagePerformanceAnalytics } from '../../components/haulage/HaulagePer
 import { CompanyDriverInfo } from '../../components/courier/CompanyDriverInfo';
 import { ReferralDashboard } from '../../components/ReferralDashboard';
 import { CourierTermsOfServiceModal } from '../../components/CourierTermsOfServiceModal';
+import { CourierDocuments } from '../../components/courier/CourierDocuments';
+import { CourierGarage } from '../../components/courier/CourierGarage';
+import { CourierPayout } from '../../components/courier/CourierPayout';
+import { CourierServiceAreas } from '../../components/courier/CourierServiceAreas';
+import { CourierPersonalInfo } from '../../components/courier/CourierPersonalInfo';
 
 type Courier = Database['public']['Tables']['couriers']['Row'];
 
@@ -25,6 +30,11 @@ export function CourierProfile({ onNavigate }: CourierProfileProps) {
   const [loading, setLoading] = useState(true);
   const [showHomeBaseModal, setShowHomeBaseModal] = useState(false);
   const [showCourierTerms, setShowCourierTerms] = useState(false);
+  const [showDocuments, setShowDocuments] = useState(false);
+  const [showGarage, setShowGarage] = useState(false);
+  const [showPayout, setShowPayout] = useState(false);
+  const [showServiceAreas, setShowServiceAreas] = useState(false);
+  const [showPersonalInfo, setShowPersonalInfo] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -160,6 +170,11 @@ export function CourierProfile({ onNavigate }: CourierProfileProps) {
           onNavigate={onNavigate}
           onLogout={signOut}
           onShowTerms={() => setShowCourierTerms(true)}
+          onShowDocuments={() => setShowDocuments(true)}
+          onShowGarage={() => setShowGarage(true)}
+          onShowPayout={() => setShowPayout(true)}
+          onShowServiceAreas={() => setShowServiceAreas(true)}
+          onShowPersonalInfo={() => setShowPersonalInfo(true)}
           isCompanyDriver={isCompanyDriver}
         />
 
@@ -180,6 +195,11 @@ export function CourierProfile({ onNavigate }: CourierProfileProps) {
         open={showCourierTerms}
         onClose={() => setShowCourierTerms(false)}
       />
+      <CourierDocuments open={showDocuments} onClose={() => setShowDocuments(false)} />
+      <CourierGarage open={showGarage} onClose={() => setShowGarage(false)} />
+      <CourierPayout open={showPayout} onClose={() => setShowPayout(false)} />
+      <CourierServiceAreas open={showServiceAreas} onClose={() => setShowServiceAreas(false)} />
+      <CourierPersonalInfo open={showPersonalInfo} onClose={() => setShowPersonalInfo(false)} />
     </div>
   );
 }
@@ -348,34 +368,44 @@ function CourierMenuGroups({
   onNavigate,
   onLogout,
   onShowTerms,
+  onShowDocuments,
+  onShowGarage,
+  onShowPayout,
+  onShowServiceAreas,
+  onShowPersonalInfo,
   isCompanyDriver,
 }: {
   onNavigate: (path: string) => void;
   onLogout: () => void;
   onShowTerms: () => void;
+  onShowDocuments: () => void;
+  onShowGarage: () => void;
+  onShowPayout: () => void;
+  onShowServiceAreas: () => void;
+  onShowPersonalInfo: () => void;
   isCompanyDriver: boolean;
 }) {
   const groups: MenuGroup[] = [
     {
       title: 'Operations',
       items: [
-        { icon: Truck, label: 'My Garage (Vehicles)', path: '/more' },
-        { icon: MapPin, label: 'Service Areas', path: '/more' },
+        { icon: Truck, label: 'My Garage (Vehicles)', action: onShowGarage },
+        { icon: MapPin, label: 'Service Areas', action: onShowServiceAreas },
       ],
     },
     {
       title: 'Account',
       items: [
         ...(!isCompanyDriver
-          ? [{ icon: CreditCard, label: 'Payout Methods', path: '/payment-methods' }]
+          ? [{ icon: CreditCard, label: 'Payout Methods', action: onShowPayout }]
           : []),
-        { icon: UserCircle, label: 'Personal Information', path: '/profile/edit' },
+        { icon: UserCircle, label: 'Personal Information', action: onShowPersonalInfo },
       ],
     },
     {
       title: 'Trust & Safety',
       items: [
-        { icon: FileText, label: 'Document Center', path: '/more' },
+        { icon: FileText, label: 'Document Center', action: onShowDocuments },
         { icon: FileText, label: 'Terms of Service', action: onShowTerms },
       ],
     },
