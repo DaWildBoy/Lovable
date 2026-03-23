@@ -13,6 +13,7 @@ import { HaulageDriverRoster } from '../../components/haulage/HaulageDriverRoste
 import { HaulageVehicleRoster } from '../../components/haulage/HaulageVehicleRoster';
 import { HaulagePerformanceAnalytics } from '../../components/haulage/HaulagePerformanceAnalytics';
 import { CompanyDriverInfo } from '../../components/courier/CompanyDriverInfo';
+import { ReferralDashboard } from '../../components/ReferralDashboard';
 
 type Courier = Database['public']['Tables']['couriers']['Row'];
 
@@ -163,6 +164,12 @@ export function CourierProfile({ onNavigate }: CourierProfileProps) {
           <HaulageFleetOverview />
           <HaulageDriverRoster />
           <HaulageVehicleRoster />
+        </div>
+      )}
+
+      {!isHaulageCompany && user && (
+        <div className="py-4">
+          <ReferralDashboard userId={user.id} role="courier" />
         </div>
       )}
 

@@ -4,7 +4,7 @@ import { ProfileQuickActions } from '../../components/ProfileQuickActions';
 import { CustomerProfileActivitySummary } from '../../components/customer/CustomerProfileActivitySummary';
 import { CustomerProfileRecentDeliveries } from '../../components/customer/CustomerProfileRecentDeliveries';
 import { CustomerProfileLoyalty } from '../../components/customer/CustomerProfileLoyalty';
-import { CustomerProfileReferral } from '../../components/customer/CustomerProfileReferral';
+import { ReferralDashboard } from '../../components/ReferralDashboard';
 import { CustomerProfileMenuSections } from '../../components/customer/CustomerProfileMenuSections';
 
 interface CustomerProfileProps {
@@ -45,7 +45,7 @@ export function CustomerProfile({ onNavigate }: CustomerProfileProps) {
 
         <CustomerProfileLoyalty userId={user.id} />
 
-        <CustomerProfileReferral userId={user.id} />
+        <ReferralDashboard userId={user.id} role="customer" />
 
         <CustomerProfileMenuSections
           onNavigate={onNavigate}
