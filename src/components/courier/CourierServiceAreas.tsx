@@ -11,6 +11,7 @@ interface Zone {
   name: string;
   description: string;
   active: boolean;
+  comingSoon?: boolean;
 }
 
 const INITIAL_ZONES: Zone[] = [
@@ -18,7 +19,7 @@ const INITIAL_ZONES: Zone[] = [
   { id: 'ewc', name: 'East-West Corridor', description: 'Arima, Tunapuna, Curepe, St. Augustine', active: true },
   { id: 'central', name: 'Central', description: 'Chaguanas, Couva, Cunupia', active: false },
   { id: 'south', name: 'South', description: 'San Fernando, Point Fortin, Siparia', active: false },
-  { id: 'tobago', name: 'Tobago', description: 'Scarborough, Crown Point, Plymouth', active: false },
+  { id: 'tobago', name: 'Tobago', description: 'Scarborough, Crown Point, Plymouth', active: false, comingSoon: true },
 ];
 
 export function CourierServiceAreas({ open, onClose }: CourierServiceAreasProps) {
@@ -70,37 +71,63 @@ export function CourierServiceAreas({ open, onClose }: CourierServiceAreasProps)
             <div
               key={zone.id}
               className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${
-                zone.active ? 'border-emerald-200 ring-1 ring-emerald-50' : 'border-gray-100'
+                zone.comingSoon
+                  ? 'border-gray-100 opacity-60'
+                  : zone.active
+                    ? 'border-emerald-200 ring-1 ring-emerald-50'
+                    : 'border-gray-100'
               }`}
             >
               <div className="p-4 flex items-center gap-3">
                 <div
                   className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    zone.active ? 'bg-emerald-50' : 'bg-slate-50'
+                    zone.comingSoon
+                      ? 'bg-gray-100'
+                      : zone.active
+                        ? 'bg-emerald-50'
+                        : 'bg-slate-50'
                   }`}
                 >
                   <MapPin
-                    className={`w-4 h-4 ${zone.active ? 'text-emerald-600' : 'text-slate-400'}`}
+                    className={`w-4 h-4 ${zone.comingSoon ? 'text-gray-300' : zone.active ? 'text-emerald-600' : 'text-slate-400'}`}
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">{zone.name}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{zone.description}</p>
+                  <div className="flex items-center gap-2">
+                    <p className={`text-sm font-semibold ${zone.comingSoon ? 'text-gray-400' : 'text-gray-900'}`}>{zone.name}</p>
+                    {zone.comingSoon && (
+                      <span className="px-2 py-0.5 bg-amber-50 border border-amber-200 rounded-full text-[10px] font-semibold text-amber-600 uppercase tracking-wide">
+                        Coming Soon
+                      </span>
+                    )}
+                  </div>
+                  <p className={`text-xs mt-0.5 ${zone.comingSoon ? 'text-gray-300' : 'text-gray-400'}`}>{zone.description}</p>
                 </div>
-                <button
-                  onClick={() => toggleZone(zone.id)}
-                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors flex-shrink-0 ${
-                    zone.active ? 'bg-emerald-500' : 'bg-gray-200'
-                  }`}
-                  role="switch"
-                  aria-checked={zone.active}
-                >
-                  <span
-                    className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                      zone.active ? 'translate-x-6' : 'translate-x-1'
+                {zone.comingSoon ? (
+                  <div
+                    className="relative inline-flex h-7 w-12 items-center rounded-full bg-gray-100 flex-shrink-0 cursor-not-allowed"
+                    role="switch"
+                    aria-checked={false}
+                    aria-disabled={true}
+                  >
+                    <span className="inline-block h-5 w-5 rounded-full bg-white shadow-sm translate-x-1" />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => toggleZone(zone.id)}
+                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors flex-shrink-0 ${
+                      zone.active ? 'bg-emerald-500' : 'bg-gray-200'
                     }`}
-                  />
-                </button>
+                    role="switch"
+                    aria-checked={zone.active}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                        zone.active ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                )}
               </div>
             </div>
           ))}
