@@ -514,7 +514,7 @@ export function CreateJobPage({ onBack, onJobCreated, editJobId }: { onBack: () 
     if (effectiveDistance > 0 && cargoItems.length > 0 && urgencyHours) {
       fetchRecommendations();
     }
-  }, [distance, multiStopDistance, cargoItems, urgencyHours, customerOffer, isMultiStop]);
+  }, [distance, multiStopDistance, cargoItems, urgencyHours, customerOffer, isMultiStop, jobType, isFragile, requiresHeavyLift, needsCover, hasSecurityGate, declaredCargoValue, cargoInsuranceEnabled]);
 
   useEffect(() => {
     const isRetailOrHaulage = userBusinessType === 'retail' || userBusinessType === 'haulage';
@@ -940,6 +940,24 @@ export function CreateJobPage({ onBack, onJobCreated, editJobId }: { onBack: () 
     return multiStopDropoffs.filter(d => d.address).length;
   };
 
+  const getTotalVolumeCm3 = (): number => {
+    return cargoItems.reduce((sum, item) => {
+      const l = parseFloat(item.dimensionsLength) || 0;
+      const w = parseFloat(item.dimensionsWidth) || 0;
+      const h = parseFloat(item.dimensionsHeight) || 0;
+      if (l === 0 || w === 0 || h === 0) return sum;
+      const toCm = (val: number, unit: string) => {
+        if (unit === 'in') return val * 2.54;
+        if (unit === 'ft') return val * 30.48;
+        return val;
+      };
+      const lCm = toCm(l, item.dimensionsLengthUnit || item.dimensionsUnit);
+      const wCm = toCm(w, item.dimensionsWidthUnit || item.dimensionsUnit);
+      const hCm = toCm(h, item.dimensionsHeightUnit || item.dimensionsUnit);
+      return sum + (lCm * wCm * hCm);
+    }, 0);
+  };
+
   const fetchRecommendations = async () => {
     try {
       const effectiveDistance = isMultiStop ? multiStopDistance : distance;
@@ -947,11 +965,25 @@ export function CreateJobPage({ onBack, onJobCreated, editJobId }: { onBack: () 
       const cargoCount = cargoItems.length;
       const totalWeight = getTotalWeight();
       const numStops = getStopCount();
+      const totalVolumeCm3 = getTotalVolumeCm3();
+      const parsedValue = parseFloat(declaredCargoValue) || 0;
 
-      const pricing = await calculatePriceRecommendation(
-        effectiveDistance, largestCargoSize, urgencyHours,
-        cargoCount, totalWeight, numStops
-      );
+      const pricing = await calculatePriceRecommendation({
+        distanceKm: effectiveDistance,
+        cargoSize: largestCargoSize,
+        urgencyHours,
+        cargoCount,
+        totalWeightKg: totalWeight,
+        numStops,
+        jobType: jobType,
+        isFragile,
+        requiresHeavyLift,
+        needsCover,
+        hasSecurityGate,
+        totalVolumeCm3,
+        declaredCargoValue: parsedValue,
+        cargoInsuranceEnabled,
+      });
       setPriceRec(pricing);
 
       if (priceInputMode === 'slider' && (customerOffer === 100 || customerOffer === priceRec?.mid)) {
@@ -959,11 +991,20 @@ export function CreateJobPage({ onBack, onJobCreated, editJobId }: { onBack: () 
       }
 
       if (customerOffer >= 0) {
-        const likelihoodData = await calculateBookingLikelihood(
-          effectiveDistance, largestCargoSize, urgencyHours,
-          customerOffer, pricing.mid, pricing.low, pricing.high,
-          cargoCount, numStops
-        );
+        const likelihoodData = await calculateBookingLikelihood({
+          distanceKm: effectiveDistance,
+          cargoSize: largestCargoSize,
+          urgencyHours,
+          customerOfferTTD: customerOffer,
+          recommendedMidTTD: pricing.mid,
+          recommendedLowTTD: pricing.low,
+          recommendedHighTTD: pricing.high,
+          cargoCount,
+          numStops,
+          jobType: jobType,
+          isFragile,
+          requiresHeavyLift,
+        });
         setLikelihood(likelihoodData);
       }
     } catch (err) {
@@ -990,11 +1031,20 @@ export function CreateJobPage({ onBack, onJobCreated, editJobId }: { onBack: () 
         try {
           const effectiveDistance = isMultiStop ? multiStopDistance : distance;
           const largestCargoSize = getLargestCargoSize();
-          const likelihoodData = await calculateBookingLikelihood(
-            effectiveDistance, largestCargoSize, urgencyHours,
-            customerOffer, priceRec.mid, priceRec.low, priceRec.high,
-            cargoItems.length, getStopCount()
-          );
+          const likelihoodData = await calculateBookingLikelihood({
+            distanceKm: effectiveDistance,
+            cargoSize: largestCargoSize,
+            urgencyHours,
+            customerOfferTTD: customerOffer,
+            recommendedMidTTD: priceRec.mid,
+            recommendedLowTTD: priceRec.low,
+            recommendedHighTTD: priceRec.high,
+            cargoCount: cargoItems.length,
+            numStops: getStopCount(),
+            jobType: jobType,
+            isFragile,
+            requiresHeavyLift,
+          });
           setLikelihood(likelihoodData);
         } catch (err) {
           console.error('Error updating likelihood:', err);
@@ -1002,7 +1052,7 @@ export function CreateJobPage({ onBack, onJobCreated, editJobId }: { onBack: () 
       };
       updateLikelihood();
     }
-  }, [customerOffer, distance, multiStopDistance, cargoItems, urgencyHours, priceRec, isMultiStop]);
+  }, [customerOffer, distance, multiStopDistance, cargoItems, urgencyHours, priceRec, isMultiStop, jobType, isFragile, requiresHeavyLift]);
 
   const isNormalCustomer = !userBusinessType || (userBusinessType !== 'retail' && userBusinessType !== 'haulage');
   const showJobTypeStep = isNormalCustomer && !checkingPayment;

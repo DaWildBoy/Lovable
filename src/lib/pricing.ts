@@ -87,49 +87,127 @@ export function resetPlatformFeeCache() {
   _feePromise = null;
 }
 
+export interface PriceRecommendationParams {
+  distanceKm: number;
+  cargoSize: 'small' | 'medium' | 'large';
+  urgencyHours: number;
+  cargoCount?: number;
+  totalWeightKg?: number;
+  numStops?: number;
+  jobType?: string;
+  isFragile?: boolean;
+  requiresHeavyLift?: boolean;
+  needsCover?: boolean;
+  hasSecurityGate?: boolean;
+  totalVolumeCm3?: number;
+  declaredCargoValue?: number;
+  cargoInsuranceEnabled?: boolean;
+}
+
 export async function calculatePriceRecommendation(
-  distanceKm: number,
-  cargoSize: 'small' | 'medium' | 'large',
-  urgencyHours: number,
+  distanceKmOrParams: number | PriceRecommendationParams,
+  cargoSize?: 'small' | 'medium' | 'large',
+  urgencyHours?: number,
   cargoCount: number = 1,
   totalWeightKg: number = 0,
   numStops: number = 1
 ): Promise<PriceRecommendation> {
-  const { data, error } = await supabase.rpc('calculate_price_recommendation', {
-    p_distance_km: distanceKm,
-    p_cargo_size: cargoSize,
-    p_urgency_hours: urgencyHours,
-    p_cargo_count: cargoCount,
-    p_total_weight_kg: totalWeightKg,
-    p_num_stops: numStops
-  });
+  let params: Record<string, unknown>;
+
+  if (typeof distanceKmOrParams === 'object') {
+    const p = distanceKmOrParams;
+    params = {
+      p_distance_km: p.distanceKm,
+      p_cargo_size: p.cargoSize,
+      p_urgency_hours: p.urgencyHours,
+      p_cargo_count: p.cargoCount ?? 1,
+      p_total_weight_kg: p.totalWeightKg ?? 0,
+      p_num_stops: p.numStops ?? 1,
+      p_job_type: p.jobType ?? 'standard',
+      p_is_fragile: p.isFragile ?? false,
+      p_requires_heavy_lift: p.requiresHeavyLift ?? false,
+      p_needs_cover: p.needsCover ?? false,
+      p_has_security_gate: p.hasSecurityGate ?? false,
+      p_total_volume_cm3: p.totalVolumeCm3 ?? 0,
+      p_declared_cargo_value: p.declaredCargoValue ?? 0,
+      p_cargo_insurance_enabled: p.cargoInsuranceEnabled ?? false,
+    };
+  } else {
+    params = {
+      p_distance_km: distanceKmOrParams,
+      p_cargo_size: cargoSize,
+      p_urgency_hours: urgencyHours,
+      p_cargo_count: cargoCount,
+      p_total_weight_kg: totalWeightKg,
+      p_num_stops: numStops,
+    };
+  }
+
+  const { data, error } = await supabase.rpc('calculate_price_recommendation', params);
 
   if (error) throw error;
   return data as PriceRecommendation;
 }
 
+export interface BookingLikelihoodParams {
+  distanceKm: number;
+  cargoSize: 'small' | 'medium' | 'large';
+  urgencyHours: number;
+  customerOfferTTD: number;
+  recommendedMidTTD: number;
+  recommendedLowTTD?: number;
+  recommendedHighTTD?: number;
+  cargoCount?: number;
+  numStops?: number;
+  jobType?: string;
+  isFragile?: boolean;
+  requiresHeavyLift?: boolean;
+}
+
 export async function calculateBookingLikelihood(
-  distanceKm: number,
-  cargoSize: 'small' | 'medium' | 'large',
-  urgencyHours: number,
-  customerOfferTTD: number,
-  recommendedMidTTD: number,
+  distanceKmOrParams: number | BookingLikelihoodParams,
+  cargoSize?: 'small' | 'medium' | 'large',
+  urgencyHours?: number,
+  customerOfferTTD?: number,
+  recommendedMidTTD?: number,
   recommendedLowTTD?: number,
   recommendedHighTTD?: number,
   cargoCount: number = 1,
   numStops: number = 1
 ): Promise<BookingLikelihood> {
-  const { data, error } = await supabase.rpc('calculate_booking_likelihood', {
-    p_distance_km: distanceKm,
-    p_cargo_size: cargoSize,
-    p_urgency_hours: urgencyHours,
-    p_customer_offer_ttd: customerOfferTTD,
-    p_recommended_mid_ttd: recommendedMidTTD,
-    p_recommended_low_ttd: recommendedLowTTD,
-    p_recommended_high_ttd: recommendedHighTTD,
-    p_cargo_count: cargoCount,
-    p_num_stops: numStops
-  });
+  let params: Record<string, unknown>;
+
+  if (typeof distanceKmOrParams === 'object') {
+    const p = distanceKmOrParams;
+    params = {
+      p_distance_km: p.distanceKm,
+      p_cargo_size: p.cargoSize,
+      p_urgency_hours: p.urgencyHours,
+      p_customer_offer_ttd: p.customerOfferTTD,
+      p_recommended_mid_ttd: p.recommendedMidTTD,
+      p_recommended_low_ttd: p.recommendedLowTTD,
+      p_recommended_high_ttd: p.recommendedHighTTD,
+      p_cargo_count: p.cargoCount ?? 1,
+      p_num_stops: p.numStops ?? 1,
+      p_job_type: p.jobType ?? 'standard',
+      p_is_fragile: p.isFragile ?? false,
+      p_requires_heavy_lift: p.requiresHeavyLift ?? false,
+    };
+  } else {
+    params = {
+      p_distance_km: distanceKmOrParams,
+      p_cargo_size: cargoSize,
+      p_urgency_hours: urgencyHours,
+      p_customer_offer_ttd: customerOfferTTD,
+      p_recommended_mid_ttd: recommendedMidTTD,
+      p_recommended_low_ttd: recommendedLowTTD,
+      p_recommended_high_ttd: recommendedHighTTD,
+      p_cargo_count: cargoCount,
+      p_num_stops: numStops,
+    };
+  }
+
+  const { data, error } = await supabase.rpc('calculate_booking_likelihood', params);
 
   if (error) throw error;
   return data as BookingLikelihood;
