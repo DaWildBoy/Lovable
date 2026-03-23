@@ -986,8 +986,8 @@ export function CreateJobPage({ onBack, onJobCreated, editJobId }: { onBack: () 
       });
       setPriceRec(pricing);
 
-      if (priceInputMode === 'slider' && (customerOffer === 100 || customerOffer === priceRec?.mid)) {
-        setCustomerOffer(pricing.mid);
+      if (priceInputMode === 'slider' && (customerOffer === 100 || customerOffer === priceRec?.high || customerOffer === priceRec?.mid)) {
+        setCustomerOffer(pricing.high);
       }
 
       if (customerOffer >= 0) {
@@ -1015,7 +1015,7 @@ export function CreateJobPage({ onBack, onJobCreated, editJobId }: { onBack: () 
   useEffect(() => {
     if (priceInputMode === 'custom') {
       if (customPriceInput === '') {
-        setCustomerOffer(priceRec?.mid || 100);
+        setCustomerOffer(priceRec?.high || 100);
       } else {
         const parsedPrice = parseInt(customPriceInput);
         if (!isNaN(parsedPrice) && parsedPrice >= 0) {
