@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { Clock, MapPin, Package, Send, Loader2, Filter, Zap, Calendar, CheckCircle2, TrendingUp, Scale, Truck, Camera, Navigation, Phone, MessageCircle, Info, CheckCircle, AlertTriangle, Building2, Shield, Dumbbell, Lock, Layers, DollarSign, Banknote, Gem, ShieldCheck, Bike, ShoppingBag, Trash2, ShoppingCart } from 'lucide-react';
+import { Clock, MapPin, Package, Send, Loader2, Filter, Zap, Calendar, CheckCircle2, TrendingUp, Scale, Truck, Camera, Navigation, Phone, MessageCircle, Info, CheckCircle, AlertTriangle, Building2, Shield, Dumbbell, Lock, Layers, DollarSign, Banknote, Gem, ShieldCheck, Bike, ShoppingBag, Trash2, ShoppingCart, Star } from 'lucide-react';
 import { getJobTypeInfo, ALL_JOB_TYPES, type JobType as JobTypeEnum } from '../../lib/jobTypeUtils';
 import { Database } from '../../lib/database.types';
 import { NotificationToast } from '../../components/NotificationToast';
@@ -51,6 +51,11 @@ import {
   DETOUR_TIME_THRESHOLD_MS,
   ACTIVE_JOB_STATUSES as VEHICLE_ACTIVE_STATUSES,
 } from '../../lib/vehicleLimits';
+import {
+  isPreferredCourierForJob,
+  isPreferredPreviewExpired,
+  transitionExpiredPreferredJobs,
+} from '../../lib/preferredDispatch';
 
 type Job = Database['public']['Tables']['jobs']['Row'];
 type Courier = Database['public']['Tables']['couriers']['Row'];
@@ -345,7 +350,6 @@ export function CourierJobs({ onNavigate }: CourierJobsProps) {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'bids' },
         () => {
-          // Mark tab as not loaded so it refreshes
           setTabsLoaded(prev => ({ ...prev, [activeTab]: false }));
           if (courier) {
             fetchJobs(courier.id, activeTab);
@@ -358,6 +362,24 @@ export function CourierJobs({ onNavigate }: CourierJobsProps) {
       supabase.removeChannel(channel);
     };
   }, [user, courier?.id]);
+
+  useEffect(() => {
+    if (activeTab !== 'available' || !courier?.id) return;
+    const hasPreferredPreview = availableJobs.some(
+      j => (j as any).job_visibility === 'preferred_preview' && (j as any).preferred_dispatch_expires_at
+    );
+    if (!hasPreferredPreview) return;
+
+    const interval = setInterval(async () => {
+      const transitioned = await transitionExpiredPreferredJobs();
+      if (transitioned > 0) {
+        setTabsLoaded(prev => ({ ...prev, available: false }));
+        fetchJobs(courier.id, 'available', true);
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [activeTab, courier?.id, availableJobs]);
 
   useEffect(() => {
     let watchId: number | null = null;
@@ -880,8 +902,9 @@ export function CourierJobs({ onNavigate }: CourierJobsProps) {
       let allCounterOffers: any[] = [];
 
       if ((targetTab === 'available' || targetTab === 'bids') && (forceRefresh || !tabsLoaded[targetTab])) {
+        await transitionExpiredPreferredJobs();
+
         if (isHaulageCompany) {
-          // For haulage companies, all jobs are available (no bidding)
           console.log('🚚 Processing', allJobs?.length || 0, 'jobs for haulage company');
 
           const courierRating = (profile as any)?.rating_average || 0;
@@ -950,6 +973,21 @@ export function CourierJobs({ onNavigate }: CourierJobsProps) {
           const available: JobWithBidInfo[] = [];
           const bidded: JobWithBidInfo[] = [];
 
+          const preferredForCustomers = new Set<string>();
+          const preferredPreviewCustomerIds = new Set<string>();
+          for (const job of allJobs) {
+            if ((job as any).job_visibility === 'preferred_preview' && !isPreferredPreviewExpired((job as any).preferred_dispatch_expires_at)) {
+              preferredPreviewCustomerIds.add((job as any).customer_user_id);
+            }
+          }
+          if (preferredPreviewCustomerIds.size > 0 && user) {
+            const checks = Array.from(preferredPreviewCustomerIds).map(async (custId) => {
+              const isPref = await isPreferredCourierForJob(custId, user.id);
+              if (isPref) preferredForCustomers.add(custId);
+            });
+            await Promise.all(checks);
+          }
+
           const courierRating = (profile as any)?.rating_average || 0;
           const vehicleClass = getVehicleClass(courier?.vehicle_type || null);
           const canAcceptMultipleFlag = (courier as any)?.can_accept_multiple_jobs !== false;
@@ -998,8 +1036,13 @@ export function CourierJobs({ onNavigate }: CourierJobsProps) {
               latestCustomerCounterOfferId: hasNewCustomerCounter ? newCustomerCounterOffers.get(job.id) : undefined,
             };
 
+            const isPreferredPreview = (job as any).job_visibility === 'preferred_preview' && !isPreferredPreviewExpired((job as any).preferred_dispatch_expires_at);
+            const isPreferredForThisJob = preferredForCustomers.has((job as any).customer_user_id);
+
             if (myBidsMap.has(job.id) || myCounterOffersMap.has(job.id)) {
               bidded.push(jobWithInfo);
+            } else if (isPreferredPreview && !isPreferredForThisJob) {
+              // skip - preferred preview and courier is not on the preferred list
             } else if ((job as any).is_high_value && courierRating < 4.8) {
               // skip
             } else if (atMaxCapacity) {
@@ -1210,7 +1253,9 @@ export function CourierJobs({ onNavigate }: CourierJobsProps) {
           assigned_courier_id: courier.id,
           queue_position: queuePosition,
           eta_calculated_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          job_visibility: 'public',
+          preferred_dispatch_expires_at: null,
         })
         .eq('id', selectedJob.id);
 
@@ -2396,6 +2441,12 @@ export function CourierJobs({ onNavigate }: CourierJobsProps) {
                 <div className="flex items-center gap-1 bg-amber-100 text-amber-800 px-2 py-1 rounded-full border border-amber-300">
                   <Building2 className="w-3 h-3" />
                   <span className="text-xs font-bold">Retail Business</span>
+                </div>
+              )}
+              {(job as any).job_visibility === 'preferred_preview' && !isPreferredPreviewExpired((job as any).preferred_dispatch_expires_at) && (
+                <div className="flex items-center gap-1 bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-900 px-2 py-1 rounded-full border border-amber-400 animate-pulse-soft">
+                  <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                  <span className="text-xs font-bold">Priority Access</span>
                 </div>
               )}
               {isAsap && (

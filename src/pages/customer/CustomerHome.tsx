@@ -11,7 +11,7 @@ import { SavedAddressesQuick } from '../../components/customer/SavedAddressesQui
 import { SpendingSummary } from '../../components/customer/SpendingSummary';
 import { MonthlyDeliveryStats } from '../../components/customer/MonthlyDeliveryStats';
 import { QuickRebook } from '../../components/customer/QuickRebook';
-import { PreferredCouriers } from '../../components/customer/PreferredCouriers';
+
 import { GuidedTour } from '../../components/GuidedTour';
 import { HeaderNotificationBell } from '../../components/HeaderNotificationBell';
 import { customerTourSteps } from '../../lib/tourSteps';
@@ -244,9 +244,8 @@ export function CustomerHome({ onNavigate }: CustomerHomeProps) {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+        <div className="mb-5">
           <QuickRebook userId={profile!.id} onNavigate={onNavigate} />
-          <PreferredCouriers userId={profile!.id} />
         </div>
       </div>
 

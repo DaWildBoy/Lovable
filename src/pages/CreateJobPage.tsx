@@ -16,7 +16,8 @@ import { CourierCargoSelector, CourierCargoSize } from '../components/courier/Co
 import { CourierHandoverForm } from '../components/courier/CourierHandoverForm';
 import { CourierSafetyCheckbox } from '../components/courier/CourierSafetyCheckbox';
 import { AuctionInfoPopup } from '../components/AuctionInfoPopup';
-import { Loader2, ArrowLeft, Package, Truck, Sofa, Laptop, Car, Wrench, Box, Layers, FileQuestion, Upload, X, Zap, Calendar, DollarSign, Gavel, CreditCard, Receipt, AlertTriangle, Shield, Dumbbell, Lock, Settings, ChevronDown, ChevronUp, Plus, Trash2, MapPin, Camera, FileCheck, BookmarkPlus, Save, Banknote, Gem, ShieldCheck, ShoppingBag, ShoppingCart, Link, ListChecks, Phone, Eye, Image, ClipboardList, CircleUser as UserCircle, Users } from 'lucide-react';
+import { getPreferredDispatchExpiry, getRetailPreferredCourierIds } from '../lib/preferredDispatch';
+import { Loader2, ArrowLeft, Package, Truck, Sofa, Laptop, Car, Wrench, Box, Layers, FileQuestion, Upload, X, Zap, Calendar, DollarSign, Gavel, CreditCard, Receipt, AlertTriangle, Shield, Dumbbell, Lock, Settings, ChevronDown, ChevronUp, Plus, Trash2, MapPin, Camera, FileCheck, BookmarkPlus, Save, Banknote, Gem, ShieldCheck, ShoppingBag, ShoppingCart, Link, ListChecks, Phone, Eye, Image, ClipboardList, CircleUser as UserCircle, Users, Star } from 'lucide-react';
 
 interface LocationData {
   text: string;
@@ -131,6 +132,9 @@ export function CreateJobPage({ onBack, onJobCreated, editJobId }: { onBack: () 
   const [courierBuildingDetails, setCourierBuildingDetails] = useState('');
   const [courierRequireSignature, setCourierRequireSignature] = useState(false);
   const [courierSafetyAcknowledged, setCourierSafetyAcknowledged] = useState(false);
+
+  const [sendToPreferredFirst, setSendToPreferredFirst] = useState(false);
+  const [hasPreferredCouriers, setHasPreferredCouriers] = useState(false);
 
   const [pickup, setPickup] = useState<LocationData>({ text: '', lat: 0, lng: 0 });
   const [dropoff, setDropoff] = useState<LocationData>({ text: '', lat: 0, lng: 0 });
@@ -481,6 +485,12 @@ export function CreateJobPage({ onBack, onJobCreated, editJobId }: { onBack: () 
       if (error) throw error;
       setHasPaymentInfo(data?.customer_payment_verified || false);
       setUserBusinessType(data?.business_type || null);
+
+      if (data?.business_type === 'retail') {
+        getRetailPreferredCourierIds(user!.id).then(ids => {
+          setHasPreferredCouriers(ids.length > 0);
+        });
+      }
     } catch (err) {
       console.error('Error checking payment info:', err);
     } finally {
@@ -1530,6 +1540,15 @@ export function CreateJobPage({ onBack, onJobCreated, editJobId }: { onBack: () 
 
       jobInsertData.proof_of_delivery_required = proofOfDelivery || 'NONE';
       jobInsertData.job_type = isNormalCustomer ? jobType : 'standard';
+
+      if (userBusinessType === 'retail' && sendToPreferredFirst && hasPreferredCouriers) {
+        jobInsertData.job_visibility = 'preferred_preview';
+        jobInsertData.preferred_dispatch_expires_at = getPreferredDispatchExpiry();
+        jobInsertData.send_to_preferred_first = true;
+      } else {
+        jobInsertData.job_visibility = 'public';
+        jobInsertData.send_to_preferred_first = false;
+      }
 
       if (jobType === 'marketplace_safebuy' && isNormalCustomer) {
         jobInsertData.marketplace_seller_contact = marketplaceSellerContact
@@ -4593,6 +4612,30 @@ export function CreateJobPage({ onBack, onJobCreated, editJobId }: { onBack: () 
             {error && (
               <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-sm text-red-600 whitespace-pre-line">{error}</p>
+              </div>
+            )}
+
+            {userBusinessType === 'retail' && hasPreferredCouriers && (
+              <div className="bg-white rounded-xl border-2 border-amber-200 overflow-hidden">
+                <div className="p-4">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={sendToPreferredFirst}
+                      onChange={(e) => setSendToPreferredFirst(e.target.checked)}
+                      className="w-5 h-5 text-amber-600 border-gray-300 rounded focus:ring-amber-500 mt-0.5"
+                    />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Star className="w-4 h-4 text-amber-500" />
+                        <span className="font-semibold text-gray-900 text-sm">Send to Preferred Couriers First</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                        Your preferred couriers get a 5-minute head start before the job opens to all drivers. If no one accepts within 5 minutes, it automatically goes public.
+                      </p>
+                    </div>
+                  </label>
+                </div>
               </div>
             )}
 
