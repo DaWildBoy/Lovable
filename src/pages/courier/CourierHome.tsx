@@ -149,7 +149,7 @@ export function CourierHome({ onNavigate }: CourierHomeProps) {
           const { data: activeJobs } = await supabase
             .from('jobs')
             .select('id')
-            .in('status', ['assigned', 'on_way_to_pickup', 'arrived_waiting', 'loading_cargo', 'cargo_collected', 'in_transit'])
+            .in('status', ['assigned', 'queued_next', 'on_way_to_pickup', 'arrived_waiting', 'loading_cargo', 'cargo_collected', 'in_transit'])
             .in('assigned_courier_id', drivers.map(d => d.id));
 
           activeJobsData = activeJobs || [];
@@ -188,7 +188,7 @@ export function CourierHome({ onNavigate }: CourierHomeProps) {
           .from('jobs')
           .select('id')
           .eq('assigned_courier_id', courierRef!.id)
-          .in('status', ['assigned', 'on_way_to_pickup', 'arrived_waiting', 'loading_cargo', 'cargo_collected', 'in_transit', 'delivered']);
+          .in('status', ['assigned', 'queued_next', 'on_way_to_pickup', 'arrived_waiting', 'loading_cargo', 'cargo_collected', 'in_transit', 'delivered']);
 
         const { data: completedJobs } = await supabase
           .from('jobs')

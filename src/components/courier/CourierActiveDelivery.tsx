@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Database } from '../../lib/database.types';
-import { Truck, MapPin, Navigation, Phone, MessageSquare, RotateCcw, ChevronRight } from 'lucide-react';
+import { Truck, MapPin, Navigation, Phone, MessageSquare, RotateCcw, ChevronRight, Clock } from 'lucide-react';
 
 type Job = Database['public']['Tables']['jobs']['Row'];
 
@@ -30,7 +30,7 @@ const STATUS_STEPS = [
   { key: 'in_transit', label: 'In Transit' },
 ];
 
-const ACTIVE_STATUSES = ['assigned', 'on_way_to_pickup', 'arrived_waiting', 'loading_cargo', 'cargo_collected', 'in_transit', 'returning'];
+const ACTIVE_STATUSES = ['assigned', 'queued_next', 'on_way_to_pickup', 'arrived_waiting', 'loading_cargo', 'cargo_collected', 'in_transit', 'returning'];
 
 function getStepIndex(status: string): number {
   const idx = STATUS_STEPS.findIndex(s => s.key === status);
@@ -90,12 +90,59 @@ export function CourierActiveDelivery({ courierId, userId, onNavigate }: Props) 
     <div className="space-y-3">
       {activeJobs.map(job => {
         const isReturning = job.status === 'returning';
+        const isQueued = job.status === 'queued_next';
         const stepIndex = getStepIndex(job.status || 'assigned');
         const customerName = job.customer
           ? `${job.customer.first_name || ''} ${job.customer.last_name || ''}`.trim() || 'Customer'
           : 'Customer';
         const returnDestination = job.pickup_location_text || 'Original pickup point';
-        const progressPercent = isReturning ? 100 : Math.round(((stepIndex + 1) / STATUS_STEPS.length) * 100);
+        const progressPercent = isReturning ? 100 : isQueued ? 0 : Math.round(((stepIndex + 1) / STATUS_STEPS.length) * 100);
+
+        if (isQueued) {
+          return (
+            <div
+              key={job.id}
+              className="bg-white rounded-2xl border border-amber-200 shadow-card overflow-hidden animate-fade-in-up"
+            >
+              <div className="px-4 py-3 flex items-center justify-between bg-gradient-to-r from-amber-500 to-orange-500">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                    <Clock className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">Queued - Up Next</p>
+                    <p className="text-[11px] text-white/70">For {customerName}</p>
+                  </div>
+                </div>
+                <span className="text-[11px] font-bold text-white bg-white/20 rounded-full px-2.5 py-1 backdrop-blur-sm">Waiting</span>
+              </div>
+              <div className="px-4 py-3.5">
+                <div className="bg-amber-50 rounded-xl p-3 mb-3 border border-amber-100">
+                  <p className="text-xs font-semibold text-amber-800">Complete your current delivery first</p>
+                  <p className="text-[10px] text-amber-600 mt-0.5">This job will auto-start once your active delivery is done.</p>
+                </div>
+                <div className="space-y-1 mb-3">
+                  <div className="flex items-center gap-2.5 text-xs">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-emerald-100 flex-shrink-0" />
+                    <span className="text-gray-700 truncate font-medium">{job.pickup_location_text}</span>
+                  </div>
+                  <div className="ml-[3px] border-l border-dashed border-gray-200 h-2.5" />
+                  <div className="flex items-center gap-2.5 text-xs">
+                    <div className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-red-100 flex-shrink-0" />
+                    <span className="text-gray-700 truncate font-medium">{job.dropoff_location_text}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => onNavigate(`/job/${job.id}`)}
+                  className="w-full py-2.5 text-xs rounded-xl font-bold flex items-center justify-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white transition-all duration-200 active:scale-[0.97]"
+                >
+                  View Details
+                  <ChevronRight className="w-3.5 h-3.5 opacity-60" />
+                </button>
+              </div>
+            </div>
+          );
+        }
 
         return (
           <div

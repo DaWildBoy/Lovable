@@ -1,32 +1,4 @@
-import {
-  Navigation,
-  MapPin,
-  Phone,
-  Camera,
-  Package,
-  CheckCircle2,
-  Loader2,
-  Calendar,
-  AlertCircle,
-  MessageCircle,
-  Check,
-  Truck,
-  ArrowRight,
-  Banknote,
-  Gem,
-  ShieldCheck,
-  RotateCcw,
-  Bike,
-  ShoppingBag,
-  Trash2,
-  ShoppingCart,
-  AlertTriangle,
-  Edit,
-  Clock,
-  XCircle,
-  Handshake,
-  PackageCheck
-} from 'lucide-react';
+import { Navigation, MapPin, Phone, Camera, Package, CheckCircle2, Loader2, Calendar, AlertCircle, MessageCircle, Check, Truck, ArrowRight, Banknote, Gem, ShieldCheck, RotateCcw, Bike, ShoppingBag, Trash2, ShoppingCart, AlertTriangle, CreditCard as Edit, Clock, XCircle, Handshake, PackageCheck } from 'lucide-react';
 import { useState, useEffect, Fragment } from 'react';
 import { DriverWizardState, DriverTask } from '../../lib/driverWizard';
 import { DriverCockpitPOD } from '../../components/DriverCockpitPOD';
@@ -1107,8 +1079,56 @@ export function ActiveJobCard({
     );
   };
 
+  const isQueued = job.status === 'queued_next';
+  const isDetourFlagged = (job as any).detour_flagged === true;
+
+  if (isQueued) {
+    return (
+      <div className="bg-white rounded-2xl shadow-xl border border-amber-200 overflow-hidden">
+        <div className="bg-gradient-to-br from-amber-50 via-amber-50/50 to-white p-5 border-b border-amber-200">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+              <Clock className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-amber-900">Queued - Up Next</p>
+              <p className="text-xs text-amber-600">This job will start automatically when your current delivery completes.</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-amber-100 p-3">
+            <div className="flex items-center gap-2 text-xs text-gray-600 mb-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-success-500 flex-shrink-0" />
+              <span className="truncate">{job.pickup_location_text || 'Pickup'}</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-600">
+              <div className="w-1.5 h-1.5 rounded-full bg-error-500 flex-shrink-0" />
+              <span className="truncate">{(job as any).dropoff_location_text || 'Drop-off'}</span>
+            </div>
+          </div>
+
+          <div className="mt-3 flex items-center justify-between">
+            <span className="px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide bg-amber-100 text-amber-700">
+              Queued
+            </span>
+            <div className="text-right">
+              <div className="text-lg font-bold text-green-600">TTD ${(Math.round(job.customer_offer_ttd * 0.90 * 100) / 100).toFixed(2)}</div>
+              <div className="text-[10px] text-gray-400">Net earnings</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+      {isDetourFlagged && (
+        <div className="flex items-center gap-2 px-5 py-2.5 bg-red-50 border-b border-red-200">
+          <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
+          <span className="text-xs font-semibold text-red-800">Route deviation detected. Please return to the planned route.</span>
+        </div>
+      )}
       <div className="bg-gradient-to-br from-slate-50 via-blue-50/80 to-slate-50 p-5 border-b border-gray-200">
         <div className="flex justify-between items-start mb-4">
           <div className="flex flex-col gap-2.5">

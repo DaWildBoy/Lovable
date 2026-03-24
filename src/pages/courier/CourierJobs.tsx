@@ -34,11 +34,23 @@ import {
 import {
   getOfflineQueue,
   removeFromOfflineQueue,
+  haversineDistance,
 } from '../../lib/geofence';
 import { ReturnItemModal } from '../../components/ReturnItemModal';
 import type { ReturnReason } from '../../components/ReturnItemModal';
 import { PodGateModal } from '../../components/PodGateModal';
 import { isMobileDevice } from '../../lib/deviceDetection';
+import {
+  getVehicleClass,
+  checkJobAcceptance,
+  transitionQueuedJob,
+  checkRouteDeviation,
+  checkETAViolation,
+  applyETAPenalty,
+  logDetourEvent,
+  DETOUR_TIME_THRESHOLD_MS,
+  ACTIVE_JOB_STATUSES as VEHICLE_ACTIVE_STATUSES,
+} from '../../lib/vehicleLimits';
 
 type Job = Database['public']['Tables']['jobs']['Row'];
 type Courier = Database['public']['Tables']['couriers']['Row'];
@@ -352,6 +364,7 @@ export function CourierJobs({ onNavigate }: CourierJobsProps) {
     let lastSentLocation: { lat: number; lng: number } | null = null;
     let lastSentTime = 0;
     let pendingUpdate: NodeJS.Timeout | null = null;
+    const detourStartTimes: Record<string, number> = {};
 
     const jobsWithActiveTracking = activeJobs.filter(job => isTrackingActive(job));
 
@@ -408,6 +421,33 @@ export function CourierJobs({ onNavigate }: CourierJobsProps) {
           } catch (error) {
             console.error('Error updating location:', error);
           }
+
+          const dropoffLat = (job as any).dropoff_location_lat || (job as any).dropoff_lat;
+          const dropoffLng = (job as any).dropoff_location_lng || (job as any).dropoff_lng;
+          if (dropoffLat && dropoffLng && !(job as any).detour_flagged) {
+            const deviation = checkRouteDeviation(lat, lng, dropoffLat, dropoffLng);
+            if (deviation.isDetour) {
+              if (!detourStartTimes[job.id]) {
+                detourStartTimes[job.id] = now;
+              } else if (now - detourStartTimes[job.id] > DETOUR_TIME_THRESHOLD_MS) {
+                const durationSeconds = Math.round((now - detourStartTimes[job.id]) / 1000);
+                logDetourEvent(
+                  job.id,
+                  courier?.id || '',
+                  user.id,
+                  deviation.distanceFromRoute,
+                  durationSeconds,
+                  lat,
+                  lng,
+                  dropoffLat,
+                  dropoffLng
+                );
+                delete detourStartTimes[job.id];
+              }
+            } else {
+              delete detourStartTimes[job.id];
+            }
+          }
         }
       };
 
@@ -422,7 +462,7 @@ export function CourierJobs({ onNavigate }: CourierJobsProps) {
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       if (pendingUpdate) clearTimeout(pendingUpdate);
     };
-  }, [activeJobs, user?.id]);
+  }, [activeJobs, user?.id, courier?.id]);
 
   useEffect(() => {
     const flushOfflineQueue = async () => {
@@ -632,7 +672,7 @@ export function CourierJobs({ onNavigate }: CourierJobsProps) {
               cargo_items(*)
             `)
             .eq('assigned_company_id', user!.id)
-            .in('status', ['assigned', 'on_way_to_pickup', 'arrived_waiting', 'loading_cargo', 'cargo_collected', 'in_transit', 'delivered', 'returning'])
+            .in('status', ['assigned', 'queued_next', 'on_way_to_pickup', 'arrived_waiting', 'loading_cargo', 'cargo_collected', 'in_transit', 'delivered', 'returning'])
             .order('updated_at', { ascending: false });
 
           if (activeError) {
@@ -652,7 +692,7 @@ export function CourierJobs({ onNavigate }: CourierJobsProps) {
               cargo_items(*)
             `)
             .eq('assigned_courier_id', activeCourterId)
-            .in('status', ['assigned', 'on_way_to_pickup', 'arrived_waiting', 'loading_cargo', 'cargo_collected', 'in_transit', 'delivered', 'returning'])
+            .in('status', ['assigned', 'queued_next', 'on_way_to_pickup', 'arrived_waiting', 'loading_cargo', 'cargo_collected', 'in_transit', 'delivered', 'returning'])
             .order('updated_at', { ascending: false });
 
           if (activeError) throw activeError;
@@ -910,11 +950,40 @@ export function CourierJobs({ onNavigate }: CourierJobsProps) {
           const available: JobWithBidInfo[] = [];
           const bidded: JobWithBidInfo[] = [];
 
-          console.log('🔍 Processing', allJobs?.length || 0, 'jobs for display');
-          console.log('📋 My bids:', myBids?.length || 0);
-          console.log('💬 My counter offers:', myCounterOffers?.length || 0);
-
           const courierRating = (profile as any)?.rating_average || 0;
+          const vehicleClass = getVehicleClass(courier?.vehicle_type || null);
+          const canAcceptMultipleFlag = (courier as any)?.can_accept_multiple_jobs !== false;
+
+          let activeJobDropoff: { lat: number; lng: number } | null = null;
+          let currentActiveCount = 0;
+
+          if (vehicleClass === 'courier_class' && canAcceptMultipleFlag) {
+            const { data: myActive } = await supabase
+              .from('jobs')
+              .select('id, status, dropoff_location_lat, dropoff_location_lng')
+              .eq('assigned_courier_id', activeCourterId)
+              .in('status', VEHICLE_ACTIVE_STATUSES);
+
+            currentActiveCount = myActive?.length || 0;
+            if (currentActiveCount === 1 && myActive![0].dropoff_location_lat && myActive![0].dropoff_location_lng) {
+              activeJobDropoff = {
+                lat: myActive![0].dropoff_location_lat,
+                lng: myActive![0].dropoff_location_lng
+              };
+            }
+          } else if (vehicleClass === 'heavy_freight') {
+            const { count } = await supabase
+              .from('jobs')
+              .select('*', { count: 'exact', head: true })
+              .eq('assigned_courier_id', activeCourterId)
+              .in('status', VEHICLE_ACTIVE_STATUSES);
+            currentActiveCount = count || 0;
+          }
+
+          const atMaxCapacity = vehicleClass === 'heavy_freight'
+            ? currentActiveCount >= 1
+            : currentActiveCount >= 2;
+
           allJobs?.forEach(job => {
             const myOffer = myCounterOffersMap.get(job.id);
             const hasNewCustomerCounter = myOffer?.status === 'countered' && newCustomerCounterOffers.has(job.id);
@@ -932,7 +1001,24 @@ export function CourierJobs({ onNavigate }: CourierJobsProps) {
             if (myBidsMap.has(job.id) || myCounterOffersMap.has(job.id)) {
               bidded.push(jobWithInfo);
             } else if ((job as any).is_high_value && courierRating < 4.8) {
-              // Skip high-value jobs for drivers below 4.8 stars
+              // skip
+            } else if (atMaxCapacity) {
+              // skip - at capacity
+            } else if (
+              activeJobDropoff &&
+              currentActiveCount === 1 &&
+              (job as any).pickup_location_lat &&
+              (job as any).pickup_location_lng
+            ) {
+              const dist = haversineDistance(
+                activeJobDropoff.lat,
+                activeJobDropoff.lng,
+                (job as any).pickup_location_lat,
+                (job as any).pickup_location_lng
+              );
+              if (dist <= 5000) {
+                available.push(jobWithInfo);
+              }
             } else {
               available.push(jobWithInfo);
             }
@@ -1098,18 +1184,43 @@ export function CourierJobs({ onNavigate }: CourierJobsProps) {
         return;
       }
 
+      const vehicleClass = getVehicleClass(courier.vehicle_type);
+      const canAcceptMultiple = (courier as any).can_accept_multiple_jobs !== false;
+      const acceptance = await checkJobAcceptance(
+        courier.id,
+        vehicleClass,
+        canAcceptMultiple,
+        (selectedJob as any).pickup_location_lat,
+        (selectedJob as any).pickup_location_lng
+      );
+
+      if (!acceptance.canAccept) {
+        addNotification(acceptance.reason || 'Cannot accept more jobs at this time.', 'warning');
+        setShowAcceptJobModal(false);
+        return;
+      }
+
+      const newStatus = acceptance.shouldQueue ? 'queued_next' : 'assigned';
+      const queuePosition = acceptance.shouldQueue ? 2 : 1;
+
       const { error: jobError } = await supabase
         .from('jobs')
         .update({
-          status: 'assigned',
+          status: newStatus,
           assigned_courier_id: courier.id,
+          queue_position: queuePosition,
+          eta_calculated_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
         .eq('id', selectedJob.id);
 
       if (jobError) throw jobError;
 
-      addNotification('Job accepted successfully!', 'success');
+      if (acceptance.shouldQueue) {
+        addNotification('Job queued! It will become active after you complete your current delivery.', 'success');
+      } else {
+        addNotification('Job accepted successfully!', 'success');
+      }
       setShowAcceptJobModal(false);
       setSelectedJob(null);
 
@@ -1667,6 +1778,33 @@ export function CourierJobs({ onNavigate }: CourierJobsProps) {
         updateData.tracking_enabled = false;
       }
 
+      if (newStatus === 'arrived_waiting') {
+        updateData.actual_arrival_at = new Date().toISOString();
+
+        const job = activeJobs.find(j => j.id === jobId);
+        if (job && (job as any).expected_travel_time_minutes && (job as any).eta_calculated_at && courier?.id && user?.id) {
+          const violation = checkETAViolation(
+            (job as any).expected_travel_time_minutes,
+            (job as any).eta_calculated_at,
+            new Date().toISOString()
+          );
+
+          if (violation.isViolation) {
+            const acceptTime = new Date((job as any).eta_calculated_at).getTime();
+            const actualMinutes = (Date.now() - acceptTime) / 60000;
+
+            await applyETAPenalty(
+              user.id,
+              jobId,
+              courier.id,
+              (job as any).expected_travel_time_minutes,
+              actualMinutes
+            );
+            addNotification(`Arrival exceeded ETA by ${violation.minutesOver} minutes. A rating adjustment has been applied.`, 'warning');
+          }
+        }
+      }
+
       if (newStatus === 'completed') {
         const job = activeJobs.find(j => j.id === jobId);
         if (!job) {
@@ -1871,6 +2009,14 @@ export function CourierJobs({ onNavigate }: CourierJobsProps) {
 
         setActiveJobs(prevJobs => prevJobs.filter(job => job.id !== jobId));
         addNotification(isCompanyDriver ? 'Job completed successfully!' : 'Job completed successfully! Payment has been added to your earnings.', 'success');
+
+        if (courier?.id) {
+          const transitionedJobId = await transitionQueuedJob(courier.id);
+          if (transitionedJobId) {
+            addNotification('Your queued job is now active! Heading to the next pickup.', 'info');
+            fetchJobs(courier.id, 'active', true);
+          }
+        }
 
         // Check if we should prompt to save the dropoff location
         if (dropoffStops.length > 0 && user?.id) {
@@ -2080,6 +2226,7 @@ export function CourierJobs({ onNavigate }: CourierJobsProps) {
 
   const formatStatus = (status: string): string => {
     const statusMap: Record<string, string> = {
+      'queued_next': 'Queued - Up Next',
       'assigned': 'Assigned',
       'on_way_to_pickup': 'On Way to Pickup',
       'arrived_waiting': 'Arrived - Waiting',
@@ -2106,6 +2253,7 @@ export function CourierJobs({ onNavigate }: CourierJobsProps) {
 
   const getStatusColor = (status: string): string => {
     const colors: Record<string, string> = {
+      'queued_next': 'bg-amber-100 text-amber-700',
       'assigned': 'bg-blue-100 text-blue-700',
       'on_way_to_pickup': 'bg-yellow-100 text-yellow-700',
       'arrived_waiting': 'bg-amber-100 text-amber-700',
