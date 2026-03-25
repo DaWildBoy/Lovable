@@ -1983,8 +1983,14 @@ export function CreateJobPage({ onBack, onJobCreated, editJobId }: { onBack: () 
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">{editMode ? 'Edit Delivery Job' : 'Create Delivery Job'}</h1>
 
           <div className="flex items-center gap-2 mb-6">
-            {Array.from({ length: totalSteps }, (_, i) => (
-              <div key={i} className={`flex-1 h-2 rounded ${step >= i + 1 ? 'bg-blue-600' : 'bg-gray-200'}`} />
+            {(showJobTypeStep
+              ? ['Job Type', 'Pickup & Dropoff', 'Cargo Details', 'Job Summary']
+              : ['Pickup & Dropoff', 'Cargo Details', 'Job Summary']
+            ).map((label, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
+                <div className={`w-full h-1.5 rounded-full transition-colors duration-300 ${step >= i + 1 ? 'bg-blue-600' : 'bg-gray-200'}`} />
+                <span className={`text-[10px] font-medium tracking-wide transition-colors duration-300 ${step >= i + 1 ? 'text-blue-600' : 'text-gray-400'}`}>{label}</span>
+              </div>
             ))}
           </div>
         </div>
