@@ -1,12 +1,17 @@
 import { useState } from 'react';
-import { Building2, TrendingUp, MapPin, FileText, Star, User, CreditCard, CheckCircle, ChevronDown, ChevronUp, Settings, Bell, Globe, Wallet as WalletIcon, MapPin as MapPinIcon } from 'lucide-react';
+import { Building2, TrendingUp, MapPin, FileText, Star, User, CreditCard, CheckCircle, ChevronDown, ChevronUp, Settings, Bell, Globe, Wallet as WalletIcon, MapPin as MapPinIcon, Receipt, Users, HardHat, UserX, ShieldAlert } from 'lucide-react';
 import { RetailCompanyProfile } from './RetailCompanyProfile';
 import { RetailAnalytics } from './RetailAnalytics';
 import { RetailSavedLocations } from './RetailSavedLocations';
 import { RetailDeliveryTemplates } from './RetailDeliveryTemplates';
 import { RetailPreferredCouriers } from './RetailPreferredCouriers';
+import { RetailBilling } from './RetailBilling';
+import { RetailTeam } from './RetailTeam';
+import { RetailYardRules } from './RetailYardRules';
+import { RetailBlacklist } from './RetailBlacklist';
+import { RetailClaims } from './RetailClaims';
 
-type SectionKey = 'company' | 'performance' | 'locations' | 'templates' | 'preferred' | 'account' | 'settings';
+type SectionKey = 'company' | 'performance' | 'locations' | 'templates' | 'preferred' | 'billing' | 'team' | 'yard_rules' | 'blacklist' | 'claims' | 'account' | 'settings';
 
 interface RetailBusinessProfileProps {
   onNavigate: (path: string) => void;
@@ -18,6 +23,11 @@ const SECTIONS: { key: SectionKey; label: string; description: string; icon: typ
   { key: 'locations', label: 'Saved Locations', description: 'Frequently used addresses', icon: MapPin, iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600' },
   { key: 'templates', label: 'Delivery Templates', description: 'Common delivery configurations', icon: FileText, iconBg: 'bg-teal-100', iconColor: 'text-teal-600' },
   { key: 'preferred', label: 'Preferred Couriers', description: 'Your favorite delivery providers', icon: Star, iconBg: 'bg-amber-100', iconColor: 'text-amber-600' },
+  { key: 'billing', label: 'Corporate Billing & Invoices', description: 'Net-30 balance and invoice history', icon: Receipt, iconBg: 'bg-slate-100', iconColor: 'text-slate-600' },
+  { key: 'team', label: 'Team & Permissions', description: 'Manage dispatchers and access controls', icon: Users, iconBg: 'bg-sky-100', iconColor: 'text-sky-600' },
+  { key: 'yard_rules', label: 'Yard Rules & Compliance', description: 'Driver instructions for every dispatch', icon: HardHat, iconBg: 'bg-amber-100', iconColor: 'text-amber-600' },
+  { key: 'blacklist', label: 'Restricted Drivers', description: 'Manage blocked drivers', icon: UserX, iconBg: 'bg-red-100', iconColor: 'text-red-600' },
+  { key: 'claims', label: 'Insurance & Claims', description: 'File cargo disputes and damage claims', icon: ShieldAlert, iconBg: 'bg-rose-100', iconColor: 'text-rose-600' },
   { key: 'account', label: 'Account', description: 'Profile and settings', icon: User, iconBg: 'bg-orange-100', iconColor: 'text-orange-600' },
   { key: 'settings', label: 'Settings', description: 'App preferences and configuration', icon: Settings, iconBg: 'bg-gray-100', iconColor: 'text-gray-600' },
 ];
@@ -60,6 +70,11 @@ export function RetailBusinessProfile({ onNavigate }: RetailBusinessProfileProps
               {key === 'locations' && <SectionLocations />}
               {key === 'templates' && <SectionTemplates />}
               {key === 'preferred' && <SectionPreferred />}
+              {key === 'billing' && <SectionBilling />}
+              {key === 'team' && <SectionTeam />}
+              {key === 'yard_rules' && <SectionYardRules />}
+              {key === 'blacklist' && <SectionBlacklist />}
+              {key === 'claims' && <SectionClaims />}
               {key === 'account' && <SectionAccount onNavigate={onNavigate} />}
               {key === 'settings' && <SectionSettings onNavigate={onNavigate} />}
             </div>
@@ -106,6 +121,46 @@ function SectionPreferred() {
   return (
     <div className="px-6 pb-6 pt-4">
       <RetailPreferredCouriers embedded />
+    </div>
+  );
+}
+
+function SectionBilling() {
+  return (
+    <div className="px-6 pb-6 pt-4">
+      <RetailBilling embedded />
+    </div>
+  );
+}
+
+function SectionTeam() {
+  return (
+    <div className="px-6 pb-6 pt-4">
+      <RetailTeam embedded />
+    </div>
+  );
+}
+
+function SectionYardRules() {
+  return (
+    <div className="px-6 pb-6 pt-4">
+      <RetailYardRules embedded />
+    </div>
+  );
+}
+
+function SectionBlacklist() {
+  return (
+    <div className="px-6 pb-6 pt-4">
+      <RetailBlacklist embedded />
+    </div>
+  );
+}
+
+function SectionClaims() {
+  return (
+    <div className="px-6 pb-6 pt-4">
+      <RetailClaims embedded />
     </div>
   );
 }
