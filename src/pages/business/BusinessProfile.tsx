@@ -3,11 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { ProfileHeader } from '../../components/ProfileHeader';
 import { ProfileQuickActions } from '../../components/ProfileQuickActions';
 import { ProfileMenuSections } from '../../components/ProfileMenuSections';
-import { RetailCompanyProfile } from '../../components/retail/RetailCompanyProfile';
-import { RetailSavedLocations } from '../../components/retail/RetailSavedLocations';
-import { RetailAnalytics } from '../../components/retail/RetailAnalytics';
-import { RetailPreferredCouriers } from '../../components/retail/RetailPreferredCouriers';
-import { RetailDeliveryTemplates } from '../../components/retail/RetailDeliveryTemplates';
+import { RetailBusinessProfile } from '../../components/retail/RetailBusinessProfile';
 import { HaulageCompanyProfile } from '../../components/haulage/HaulageCompanyProfile';
 
 interface BusinessProfileProps {
@@ -43,12 +39,8 @@ export function BusinessProfile({ onNavigate }: BusinessProfileProps) {
       <ProfileQuickActions onNavigate={onNavigate} />
 
       {isRetail && (
-        <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-          <RetailCompanyProfile />
-          <RetailAnalytics />
-          <RetailSavedLocations />
-          <RetailDeliveryTemplates />
-          <RetailPreferredCouriers />
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          <RetailBusinessProfile onNavigate={onNavigate} />
         </div>
       )}
 

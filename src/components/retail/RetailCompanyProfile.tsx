@@ -3,7 +3,11 @@ import { Building2, Mail, Phone, User, Upload, Check } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 
-export function RetailCompanyProfile() {
+interface RetailCompanyProfileProps {
+  embedded?: boolean;
+}
+
+export function RetailCompanyProfile({ embedded = false }: RetailCompanyProfileProps) {
   const { profile, refreshProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -71,27 +75,39 @@ export function RetailCompanyProfile() {
     'Other Retail',
   ];
 
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center">
-            <Building2 className="w-5 h-5" />
+  const content = (
+    <>
+      {!embedded && (
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center">
+              <Building2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Company Information</h2>
+              <p className="text-sm text-gray-600">Manage your retail business profile</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Company Information</h2>
-            <p className="text-sm text-gray-600">Manage your retail business profile</p>
-          </div>
+          {!isEditing && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+            >
+              Edit
+            </button>
+          )}
         </div>
-        {!isEditing && (
+      )}
+      {embedded && !isEditing && (
+        <div className="flex justify-end mb-4">
           <button
             onClick={() => setIsEditing(true)}
             className="px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
           >
             Edit
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {saved && (
         <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-700">
@@ -268,6 +284,16 @@ export function RetailCompanyProfile() {
           </div>
         )}
       </div>
+    </>
+  );
+
+  if (embedded) {
+    return <div>{content}</div>;
+  }
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      {content}
     </div>
   );
 }

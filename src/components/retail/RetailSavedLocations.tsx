@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Plus, Edit2, Trash2, Star, Check, X } from 'lucide-react';
+import { MapPin, Plus, CreditCard as Edit2, Trash2, Star, Check, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 
@@ -13,7 +13,11 @@ interface SavedLocation {
   is_default_pickup: boolean;
 }
 
-export function RetailSavedLocations() {
+interface RetailSavedLocationsProps {
+  embedded?: boolean;
+}
+
+export function RetailSavedLocations({ embedded = false }: RetailSavedLocationsProps) {
   const { profile } = useAuth();
   const [locations, setLocations] = useState<SavedLocation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -126,15 +130,34 @@ export function RetailSavedLocations() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="text-center text-gray-500">Loading saved locations...</div>
+      <div className={embedded ? '' : 'bg-white rounded-xl shadow-sm border border-gray-200 p-6'}>
+        <div className="text-center text-gray-500 py-4">Loading saved locations...</div>
       </div>
     );
   }
 
-  return (
+  const addBtn = (
+    <button
+      onClick={() => {
+        setEditingLocation(null);
+        setFormData({
+          location_name: '',
+          address_text: '',
+          location_notes: '',
+          is_default_pickup: false,
+        });
+        setShowAddModal(true);
+      }}
+      className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all text-sm font-medium"
+    >
+      <Plus className="w-4 h-4" />
+      Add Location
+    </button>
+  );
+
+  const listContent = (
     <>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      {!embedded && (
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-green-100 text-green-600 rounded-lg flex items-center justify-center">
@@ -145,23 +168,14 @@ export function RetailSavedLocations() {
               <p className="text-sm text-gray-600">Quick access to frequently used addresses</p>
             </div>
           </div>
-          <button
-            onClick={() => {
-              setEditingLocation(null);
-              setFormData({
-                location_name: '',
-                address_text: '',
-                location_notes: '',
-                is_default_pickup: false,
-              });
-              setShowAddModal(true);
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            Add Location
-          </button>
+          {addBtn}
         </div>
+      )}
+      {embedded && (
+        <div className="flex justify-end mb-4">
+          {addBtn}
+        </div>
+      )}
 
         {locations.length === 0 ? (
           <div className="text-center py-8">
@@ -213,7 +227,18 @@ export function RetailSavedLocations() {
             ))}
           </div>
         )}
-      </div>
+      </>
+    );
+
+  return (
+    <>
+      {embedded ? (
+        <div>{listContent}</div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          {listContent}
+        </div>
+      )}
 
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

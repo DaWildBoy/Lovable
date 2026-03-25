@@ -22,7 +22,11 @@ interface CourierSearchResult {
   role: string;
 }
 
-export function RetailPreferredCouriers() {
+interface RetailPreferredCouriersProps {
+  embedded?: boolean;
+}
+
+export function RetailPreferredCouriers({ embedded = false }: RetailPreferredCouriersProps) {
   const { profile } = useAuth();
   const [preferredCouriers, setPreferredCouriers] = useState<PreferredCourier[]>([]);
   const [loading, setLoading] = useState(true);
@@ -144,15 +148,25 @@ export function RetailPreferredCouriers() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="text-center text-gray-500">Loading preferred couriers...</div>
+      <div className={embedded ? '' : 'bg-white rounded-xl shadow-sm border border-gray-200 p-6'}>
+        <div className="text-center text-gray-500 py-4">Loading preferred couriers...</div>
       </div>
     );
   }
 
-  return (
+  const addBtn = (
+    <button
+      onClick={() => setShowAddModal(true)}
+      className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-all text-sm font-medium"
+    >
+      <UserPlus className="w-4 h-4" />
+      Add Courier
+    </button>
+  );
+
+  const listContent = (
     <>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      {!embedded && (
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-yellow-100 text-yellow-600 rounded-lg flex items-center justify-center">
@@ -163,75 +177,86 @@ export function RetailPreferredCouriers() {
               <p className="text-sm text-gray-600">Mark your favorite delivery providers</p>
             </div>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-all text-sm font-medium"
-          >
-            <UserPlus className="w-4 h-4" />
-            Add Courier
-          </button>
+          {addBtn}
         </div>
+      )}
+      {embedded && (
+        <div className="flex justify-end mb-4">
+          {addBtn}
+        </div>
+      )}
 
-        {preferredCouriers.length === 0 ? (
-          <div className="text-center py-8">
-            <Star className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-600 mb-2">No preferred couriers yet</p>
-            <p className="text-sm text-gray-500">
-              Mark couriers as preferred to easily identify them when reviewing bids
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {preferredCouriers.map((pc) => (
-              <div
-                key={pc.id}
-                className="flex items-center gap-4 border border-gray-200 rounded-lg p-4 hover:border-yellow-300 transition-all"
-              >
-                {pc.courier.avatar_url ? (
-                  <img
-                    src={pc.courier.avatar_url}
-                    alt={pc.courier.full_name}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                    <span className="text-gray-600 font-semibold">
-                      {pc.courier.full_name?.charAt(0) || '?'}
-                    </span>
-                  </div>
-                )}
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">{pc.courier.full_name}</h3>
-                  {pc.courier.company_name && (
-                    <p className="text-sm text-gray-600">{pc.courier.company_name}</p>
-                  )}
-                  {pc.notes && (
-                    <p className="text-xs text-gray-500 italic mt-1">{pc.notes}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
-                    <Star className="w-3 h-3 fill-current" />
-                    Preferred
-                  </div>
-                  <button
-                    onClick={() => handleRemove(pc.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-xs text-yellow-700">
-            <strong>Note:</strong> Preferred couriers will be visually highlighted when viewing bids and offers. This does not affect bidding or auto-assignment.
+      {preferredCouriers.length === 0 ? (
+        <div className="text-center py-8">
+          <Star className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+          <p className="text-gray-600 mb-2">No preferred couriers yet</p>
+          <p className="text-sm text-gray-500">
+            Mark couriers as preferred to easily identify them when reviewing bids
           </p>
         </div>
+      ) : (
+        <div className="space-y-3">
+          {preferredCouriers.map((pc) => (
+            <div
+              key={pc.id}
+              className="flex items-center gap-4 border border-gray-200 rounded-lg p-4 hover:border-yellow-300 transition-all"
+            >
+              {pc.courier.avatar_url ? (
+                <img
+                  src={pc.courier.avatar_url}
+                  alt={pc.courier.full_name}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                  <span className="text-gray-600 font-semibold">
+                    {pc.courier.full_name?.charAt(0) || '?'}
+                  </span>
+                </div>
+              )}
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900">{pc.courier.full_name}</h3>
+                {pc.courier.company_name && (
+                  <p className="text-sm text-gray-600">{pc.courier.company_name}</p>
+                )}
+                {pc.notes && (
+                  <p className="text-xs text-gray-500 italic mt-1">{pc.notes}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
+                  <Star className="w-3 h-3 fill-current" />
+                  Preferred
+                </div>
+                <button
+                  onClick={() => handleRemove(pc.id)}
+                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <p className="text-xs text-yellow-700">
+          <strong>Note:</strong> Preferred couriers will be visually highlighted when viewing bids and offers. This does not affect bidding or auto-assignment.
+        </p>
       </div>
+    </>
+  );
+
+  return (
+    <>
+      {embedded ? (
+        <div>{listContent}</div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          {listContent}
+        </div>
+      )}
 
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

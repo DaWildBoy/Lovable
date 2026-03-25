@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Plus, Edit2, Trash2, Check, X } from 'lucide-react';
+import { FileText, Plus, CreditCard as Edit2, Trash2, Check, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 
@@ -14,7 +14,11 @@ interface DeliveryTemplate {
   special_requirements: any;
 }
 
-export function RetailDeliveryTemplates() {
+interface RetailDeliveryTemplatesProps {
+  embedded?: boolean;
+}
+
+export function RetailDeliveryTemplates({ embedded = false }: RetailDeliveryTemplatesProps) {
   const { profile } = useAuth();
   const [templates, setTemplates] = useState<DeliveryTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,18 +126,36 @@ export function RetailDeliveryTemplates() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="text-center text-gray-500">Loading templates...</div>
+      <div className={embedded ? '' : 'bg-white rounded-xl shadow-sm border border-gray-200 p-6'}>
+        <div className="text-center text-gray-500 py-4">Loading templates...</div>
       </div>
     );
   }
 
-  return (
+  const addBtn = (
+    <button
+      onClick={() => {
+        setEditingTemplate(null);
+        setFormData({
+          template_name: '',
+          pod_requirements: 'Photo',
+          delivery_order_preference: 'Sequential',
+        });
+        setShowModal(true);
+      }}
+      className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all text-sm font-medium"
+    >
+      <Plus className="w-4 h-4" />
+      New Template
+    </button>
+  );
+
+  const listContent = (
     <>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      {!embedded && (
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-teal-100 text-teal-600 rounded-lg flex items-center justify-center">
               <FileText className="w-5 h-5" />
             </div>
             <div>
@@ -141,24 +163,16 @@ export function RetailDeliveryTemplates() {
               <p className="text-sm text-gray-600">Save common delivery configurations</p>
             </div>
           </div>
-          <button
-            onClick={() => {
-              setEditingTemplate(null);
-              setFormData({
-                template_name: '',
-                pod_requirements: 'Photo',
-                delivery_order_preference: 'Sequential',
-              });
-              setShowModal(true);
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            New Template
-          </button>
+          {addBtn}
         </div>
+      )}
+      {embedded && (
+        <div className="flex justify-end mb-4">
+          {addBtn}
+        </div>
+      )}
 
-        {templates.length === 0 ? (
+      {templates.length === 0 ? (
           <div className="text-center py-8">
             <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
             <p className="text-gray-600 mb-2">No delivery templates yet</p>
@@ -207,12 +221,23 @@ export function RetailDeliveryTemplates() {
           </div>
         )}
 
-        <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-          <p className="text-xs text-purple-700">
+        <div className="mt-4 p-3 bg-teal-50 border border-teal-200 rounded-lg">
+          <p className="text-xs text-teal-700">
             <strong>Note:</strong> Templates are optional shortcuts that can be applied when creating new delivery jobs. They do not automatically modify job creation behavior.
           </p>
         </div>
-      </div>
+      </>
+    );
+
+  return (
+    <>
+      {embedded ? (
+        <div>{listContent}</div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          {listContent}
+        </div>
+      )}
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
